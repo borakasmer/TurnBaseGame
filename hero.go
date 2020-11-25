@@ -136,10 +136,10 @@ func fight(attacker IHero.FightHero, target IHero.FightHero) {
 	}
 }
 
-func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *fighter.Fighter, druidChan chan *druid.Druid) {
+func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *fighter.Fighter, druidChan chan *druid.Druid, wg *sync.WaitGroup, lockObject *sync.Mutex) {
 	select {
-	case wiz := <-wizardChan:
-		if wiz.Blood > 0 { //Ölenle ölünmez...
+	case wiz, ok := <-wizardChan:
+		if ok && wiz.Blood > 0 { //Ölenle ölünmez...		
 			wiz.Magic = MapRandomKeyGet(wiz.Manas).(string)
 			z := strings.Repeat("#", 100)
 			fmt.Println(z)
@@ -165,7 +165,9 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 
 			//fmt.Printf(wiz.Name)
 			//fight(fighterList["wizard"], randomVictom)
+			lockObject.Lock()
 			fight(wiz, randomVictom)
+			lockObject.Unlock()
 		} else {
 			z := strings.Repeat("#", 100)
 			fmt.Println(z)
@@ -174,8 +176,8 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 		var _druidAttack, _ = fighterList["druid"].(*druid.Druid)
 		druidChan <- _druidAttack
 
-	case fig := <-fighterChan:
-		if fig.Blood > 0 { //If fighter is not dead
+	case fig, ok := <-fighterChan:
+		if ok && fig.Blood > 0 { //If fighter is not dead
 			fig.Weapon = MapRandomKeyGet(fig.Staminas).(string)
 			//SelectRandom Victom
 			var rndVictom int
@@ -198,7 +200,9 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 
 			//fmt.Printf(fig.Name)
 			//fight(fighterList["fighter"], randomVictom)
+			lockObject.Lock()
 			fight(fig, randomVictom)
+			lockObject.Unlock()
 
 			/*fmt.Printf("STAMINA Fig : %d \n", fig.Stamina)
 			var _fighterAttacker, _ = fighterList["fighter"].(*fighter.Fighter)
@@ -212,8 +216,8 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 		var _wizardAttack, _ = fighterList["wizard"].(*wizard.Wizard)
 		wizardChan <- _wizardAttack
 
-	case dru := <-druidChan:
-		if dru.Blood > 0 { //If druid is not dead
+	case dru, ok := <-druidChan:
+		if ok && dru.Blood > 0 { //If druid is not dead
 			dru.Animal = MapRandomKeyGet(dru.Manas).(string)
 			z := strings.Repeat("#", 100)
 			fmt.Println(z)
@@ -239,7 +243,9 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 
 			//fmt.Printf(dru.Name)
 			//fight(fighterList["druid"], randomVictom)
+			lockObject.Lock()
 			fight(dru, randomVictom)
+			lockObject.Unlock()
 		} else {
 			z := strings.Repeat("#", 100)
 			fmt.Println(z)
@@ -254,6 +260,7 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 		//fmt.Printf("CAN : %d \n",_fighterAttack.Blood)
 		//fmt.Printf("STAMINA : %d \n",_fighterAttack.Stamina)
 	}
+	wg.Done()
 }
 
 var fighterList map[string]IHero.FightHero
@@ -323,6 +330,8 @@ func main() {
 
 	var stage int = 0
 
+	wg := &sync.WaitGroup{}
+	lockObject := &sync.Mutex{}
 	//for !isFighterDead && !isWizardDead && !isDruidDead {
 	for TotalLive > 1 { //Ölümüne savaş :)
 
@@ -334,13 +343,15 @@ func main() {
 
 		//loopTurnFights(wizardChan, fighterChan, druidChan)
 		for i := 1; i < 5; i++ {
-			go turnFights(i, wizardChan, fighterChan, druidChan)
+			wg.Add(1)
+			go turnFights(i, wizardChan, fighterChan, druidChan, wg, lockObject)
 		}
 
 		<-time.After(time.Millisecond * 100)
 
 		//Check Who is Standing!
 		TotalLive = 0
+		lockObject.Lock()
 		if !fighterList["fighter"].IsDeath() {
 			TotalLive += 1
 		}
@@ -350,13 +361,17 @@ func main() {
 		if !fighterList["druid"].IsDeath() {
 			TotalLive += 1
 		}
+		lockObject.Unlock()
 
 		/*isFighterDead = fighterList["fighter"].IsDeath()
 		isWizardDead = fighterList["wizard"].IsDeath()
 		isDruidDead = fighterList["druid"].IsDeath()*/
 	}
-
-	<-time.After(time.Second * 5)
+	wg.Wait()
+	close(fighterChan)
+	close(wizardChan)
+	close(druidChan)
+	//<-time.After(time.Second * 5)
 
 	/*
 		fmt.Println("TURN 1")
