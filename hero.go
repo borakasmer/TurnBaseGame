@@ -34,6 +34,19 @@ func fight(attacker IHero.FightHero, target IHero.FightHero) {
 		attackerMana = _druidAttacker.GetMana()
 	}
 
+	/*
+		switch attacker.(type) {
+		case *fighter.Fighter:
+			_fighterAttacker.SpendStamina()
+			attackerStamina = _fighterAttacker.GetStamina()
+		case *wizard.Wizard:
+			_wizardAttacker.SpendMana()
+			attackerMana = _wizardAttacker.GetMana()
+		case *druid.Druid:
+			_druidAttacker.SpendMana()
+			attackerMana = _druidAttacker.GetMana()
+	*/
+
 	nameAttacker, _ := attacker.GetInfo()
 	nameTarget, bloodTarget := target.GetInfo()
 
