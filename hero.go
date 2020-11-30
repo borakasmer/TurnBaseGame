@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"turnBaseGame/druid"
 	IHero "turnBaseGame/fightHero"
@@ -150,36 +151,38 @@ func fight(attacker IHero.FightHero, target IHero.FightHero) {
 }
 
 func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *fighter.Fighter, druidChan chan *druid.Druid, wg *sync.WaitGroup, lockObject *sync.Mutex) {
+	//func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *fighter.Fighter, druidChan chan *druid.Druid, wg *sync.WaitGroup) {
+	//func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *fighter.Fighter, druidChan chan *druid.Druid) {
 	select {
 	case wiz, ok := <-wizardChan:
-		if ok && wiz.Blood > 0 { //Ölenle ölünmez...		
+		if ok && wiz.Blood > 0 { //Ölenle ölünmez...
 			wiz.Magic = MapRandomKeyGet(wiz.Manas).(string)
 			z := strings.Repeat("#", 100)
 			fmt.Println(z)
 
-			//SelectRandom Victom
-			var rndVictom int
+			//SelectRandom Victim
+			var rndVictim int
 			for {
-				rndVictom = GetRandomID(3)
-				//If selected Victom different from the Fighter
-				var _, wizardOk = fighterNumberList[rndVictom].(*wizard.Wizard)
+				rndVictim = GetRandomID(3)
+				//If selected Victim different from the Fighter
+				var _, wizardOk = fighterNumberList[rndVictim].(*wizard.Wizard)
 				if !wizardOk {
-					_, blood := fighterNumberList[rndVictom].GetInfo()
+					_, blood := fighterNumberList[rndVictim].GetInfo()
 					if blood > 0 {
 						break
 					}
 				}
 			}
-			randomVictom := fighterNumberList[rndVictom]
-			//We Selected Random Victom Different From the Wizard
+			randomVictim := fighterNumberList[rndVictim]
+			//We Selected Random Victim Different From the Wizard
 
 			fmt.Printf("TURN %d \n", turn)
 			//fight(&wiz, fighterList["fighter"])
 
 			//fmt.Printf(wiz.Name)
-			//fight(fighterList["wizard"], randomVictom)
+			//fight(fighterList["wizard"], randomVictim)
 			lockObject.Lock()
-			fight(wiz, randomVictom)
+			fight(wiz, randomVictim)
 			lockObject.Unlock()
 		} else {
 			z := strings.Repeat("#", 100)
@@ -192,29 +195,29 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 	case fig, ok := <-fighterChan:
 		if ok && fig.Blood > 0 { //If fighter is not dead
 			fig.Weapon = MapRandomKeyGet(fig.Staminas).(string)
-			//SelectRandom Victom
-			var rndVictom int
+			//SelectRandom Victim
+			var rndVictim int
 			for {
-				rndVictom = GetRandomID(3)
-				//If selected Victom different from the Fighter
-				var _, fighterOk = fighterNumberList[rndVictom].(*fighter.Fighter)
+				rndVictim = GetRandomID(3)
+				//If selected Victim different from the Fighter
+				var _, fighterOk = fighterNumberList[rndVictim].(*fighter.Fighter)
 				if !fighterOk {
-					_, blood := fighterNumberList[rndVictom].GetInfo()
+					_, blood := fighterNumberList[rndVictim].GetInfo()
 					if blood > 0 {
 						break
 					}
 				}
 			}
-			randomVictom := fighterNumberList[rndVictom]
-			//We Selected Random Victom Different From the Fighter
+			randomVictim := fighterNumberList[rndVictim]
+			//We Selected Random Victim Different From the Fighter
 
 			fmt.Printf("TURN %d \n", turn)
 			//fight(&fig, fighterList["wizard"])
 
 			//fmt.Printf(fig.Name)
-			//fight(fighterList["fighter"], randomVictom)
+			//fight(fighterList["fighter"], randomVictim)
 			lockObject.Lock()
-			fight(fig, randomVictom)
+			fight(fig, randomVictim)
 			lockObject.Unlock()
 
 			/*fmt.Printf("STAMINA Fig : %d \n", fig.Stamina)
@@ -235,29 +238,29 @@ func turnFights(turn int, wizardChan chan *wizard.Wizard, fighterChan chan *figh
 			z := strings.Repeat("#", 100)
 			fmt.Println(z)
 
-			//SelectRandom Victom
-			var rndVictom int
+			//SelectRandom Victim
+			var rndVictim int
 			for {
-				rndVictom = GetRandomID(3)
-				//If selected Victom different from the Druid
-				var _, druidOk = fighterNumberList[rndVictom].(*druid.Druid)
+				rndVictim = GetRandomID(3)
+				//If selected Victim different from the Druid
+				var _, druidOk = fighterNumberList[rndVictim].(*druid.Druid)
 				if !druidOk {
-					_, blood := fighterNumberList[rndVictom].GetInfo()
+					_, blood := fighterNumberList[rndVictim].GetInfo()
 					if blood > 0 {
 						break
 					}
 				}
 			}
-			randomVictom := fighterNumberList[rndVictom]
-			//We Selected Random Victom Different From the Druid
+			randomVictim := fighterNumberList[rndVictim]
+			//We Selected Random Victim Different From the Druid
 
 			fmt.Printf("TURN %d \n", turn)
 			//fight(&dru, fighterList["fighter"])
 
 			//fmt.Printf(dru.Name)
-			//fight(fighterList["druid"], randomVictom)
+			//fight(fighterList["druid"], randomVictim)
 			lockObject.Lock()
-			fight(dru, randomVictom)
+			fight(dru, randomVictim)
 			lockObject.Unlock()
 		} else {
 			z := strings.Repeat("#", 100)
@@ -281,21 +284,21 @@ var fighterNumberList map[int]IHero.FightHero
 
 func GetRandomID(limit int) int {
 	rand.Seed(time.Now().UnixNano())
-	rndVictom := rand.Intn(limit) + 1
-	//fmt.Printf("Random : %d \n", rndVictom)
-	return rndVictom
+	rndVictim := rand.Intn(limit) + 1
+	//fmt.Printf("Random : %d \n", rndVictim)
+	return rndVictim
 }
 func GetRandomBetweenID(minLimit int, maxlimit int) int {
 	rand.Seed(time.Now().UnixNano())
-	rndVictom := rand.Intn(maxlimit-minLimit) + minLimit + 1
-	//fmt.Printf("Random : %d \n", rndVictom)
-	return rndVictom
+	rndVictim := rand.Intn(maxlimit-minLimit) + minLimit + 1
+	//fmt.Printf("Random : %d \n", rndVictim)
+	return rndVictim
 }
 
 /*func GetRandomBloodMana() int {
 	rand.Seed(time.Now().UnixNano())
-	rndVictom := rand.Intn(100)
-	return rndVictom
+	rndVictim := rand.Intn(100)
+	return rndVictim
 }*/
 
 var isFighterDead bool = false
@@ -316,7 +319,7 @@ func main() {
 	barbar.Name = "Barbar"
 	//barbar.Level = 40
 	barbar.Level = GetRandomID(60)
-	barbar.Stamina = 20
+	//barbar.Stamina = 20
 	//barbar.Weapon = MapRandomKeyGet(barbar.Staminas).(string)
 
 	forest := druid.CreateDruid(GetRandomBetweenID(50, 100), GetRandomBetweenID(50, 100))
@@ -358,8 +361,10 @@ func main() {
 		for i := 1; i < 5; i++ {
 			wg.Add(1)
 			go turnFights(i, wizardChan, fighterChan, druidChan, wg, lockObject)
+			//go turnFights(i, wizardChan, fighterChan, druidChan, wg)
+			//go turnFights(i, wizardChan, fighterChan, druidChan)
 		}
-
+		//wg.Wait()
 		<-time.After(time.Millisecond * 100)
 
 		//Check Who is Standing!
